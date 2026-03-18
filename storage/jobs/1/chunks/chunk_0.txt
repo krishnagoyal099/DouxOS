@@ -1,0 +1,5 @@
+Hello World
+This is a test file for DouxOS
+It has @ symbols we want to remove
+@@@@@
+End of file.

@@ -1,0 +1,46 @@
+# Go binaries and tools
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+bin/
+
+# Wails & Frontend
+**/frontend/dist/
+**/frontend/node_modules/
+**/wailsjs/
+build/bin/
+
+# Node/Frontend (General)
+node_modules/
+.npm/
+.env
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# DouxOS specific
+douxos.db
+douxos.db-journal
+storage/uploads/*
+!storage/uploads/.gitkeep
+douxos_cache*
