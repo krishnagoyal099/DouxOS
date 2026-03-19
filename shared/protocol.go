@@ -20,14 +20,14 @@ type MessageRequestTask struct {
 }
 
 // MessageTaskAssigned (Server -> Node)
-// Sent when work is available
 type MessageTaskAssigned struct {
-	Type        string `json:"type"`
-	TaskID      int    `json:"task_id"`
-	JobID       int    `json:"job_id"`       // <--- NEW: Needed for specialized caching
-	DownloadURL string `json:"download_url"` // URL to the chunk file
-	ScriptURL   string `json:"script_url"`   // URL to the WASM binary
-	Instruction string `json:"instruction"`  // e.g., "run_wasm"
+	Type            string `json:"type"`
+	TaskID          int    `json:"task_id"`
+	JobID           int    `json:"job_id"`
+	DownloadURL     string `json:"download_url"`
+	ScriptURL       string `json:"script_url"`
+	Instruction     string `json:"instruction"`
+	ResultUploadURL string `json:"result_upload_url"` // <--- NEW: URL to send result
 }
 
 // MessageTaskDone (Node -> Server)

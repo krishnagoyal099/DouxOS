@@ -1,9 +1,12 @@
 package executor
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,6 +75,22 @@ func (m *Monitor) ProcessTask(task shared.MessageTaskAssigned) bool {
 	instance.Close(ctx)
 
 	log.Println("Execution Complete.")
+
+	// 4. UPLOAD RESULT
+	// NOTE: This block must be BEFORE the final 'return true'
+	if task.ResultUploadURL == "" {
+		log.Println("ERROR: No ResultUploadURL provided. Cannot save result.")
+		return false
+	}
+
+	log.Println("Uploading result to:", task.ResultUploadURL)
+	err = uploadFile(task.ResultUploadURL, outputPath)
+	if err != nil {
+		log.Println("Failed to upload result:", err)
+		return false
+	}
+
+	log.Println("Result uploaded successfully.")
 	return true
 }
 
@@ -91,13 +110,11 @@ func (m *Monitor) setupScript(url string) bool {
 	}
 	defer resp.Body.Close()
 
-	// FIX: Reuse 'err' variable instead of declaring a new one
 	binary, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false
 	}
 
-	// FIX: Reuse 'err' variable again
 	m.module, err = m.runtime.CompileModule(context.Background(), binary)
 	if err != nil {
 		log.Println("Failed to compile WASM:", err)
@@ -127,4 +144,40 @@ func downloadFile(url, path string) error {
 	defer out.Close()
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// uploadFile sends the result file back to the server
+func uploadFile(url, path string) error {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	// Create a multipart form
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	fw, err := w.CreateFormFile("file", "result.txt")
+	if err != nil {
+		return err
+	}
+	fw.Write(body)
+	w.Close()
+
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
+	}
+	return nil
 }
