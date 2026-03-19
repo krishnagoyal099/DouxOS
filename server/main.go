@@ -30,6 +30,9 @@ func main() {
 	// Static file server for chunks (needed for Node to download files)
 	r.PathPrefix("/storage/").Handler(http.StripPrefix("/storage/", http.FileServer(http.Dir("./storage"))))
 
+	// Serve Frontend at root
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./frontend")))
+
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

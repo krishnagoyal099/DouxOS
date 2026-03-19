@@ -33,10 +33,8 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &Client{Conn: conn, NodeID: uuid.New().String()}
+	client := &Client{Conn: conn, NodeID: ""}
 	defer conn.Close()
-
-	log.Println("Node registered:", client.NodeID)
 
 	// Read loop
 	for {
@@ -53,8 +51,14 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		switch base.Type {
 		case "register":
-			// We already assigned a UUID, but we confirm here
-			log.Println("Node confirmed registration:", client.NodeID)
+			var reg shared.MessageRegister
+			json.Unmarshal(message, &reg)
+			if reg.NodeID != "" {
+				client.NodeID = reg.NodeID
+			} else {
+				client.NodeID = uuid.New().String()
+			}
+			log.Printf("Node registered: %s (confidence: %d)", client.NodeID, reg.ConfidenceScore)
 
 		case "request_task":
 			client.assignTask()
@@ -109,7 +113,7 @@ func (c *Client) assignTask() {
 		JobID:           jobID,
 		DownloadURL:     downloadURL,
 		ResultUploadURL: resultUploadURL,
-		ScriptURL:       "http://localhost:8080/storage/script.wasm",
+		ScriptURL:       fmt.Sprintf("http://localhost:8080/storage/jobs/%d/script.wasm", jobID),
 		Instruction:     "run_wasm",
 	}
 

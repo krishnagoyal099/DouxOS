@@ -2,10 +2,11 @@ package connection
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
-	"math/rand"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/krishnagoyal099/DouxOS/node/executor"
 	"github.com/krishnagoyal099/DouxOS/shared"
@@ -69,7 +70,7 @@ func (c *Client) readLoop() {
 	// 1. Register
 	reg := shared.MessageRegister{
 		Type:            "register",
-		NodeID:          randomString(8),
+		NodeID:          uuid.New().String(),
 		ConfidenceScore: 90,
 	}
 	c.conn.WriteJSON(reg)
@@ -119,7 +120,7 @@ func (c *Client) requestLoop() {
 
 func (c *Client) handleTask(task shared.MessageTaskAssigned) {
 	c.state = "WORKING"
-	c.uiCb("WORKING", "Processing Task #"+string(rune(task.TaskID)))
+	c.uiCb("WORKING", fmt.Sprintf("Processing Task #%d", task.TaskID))
 
 	// Execute via Monitor (Sandbox)
 	success := c.monitor.ProcessTask(task)
@@ -153,12 +154,3 @@ func (c *Client) GetState() string {
 	return c.state
 }
 
-func randomString(n int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[r.Intn(len(letters))]
-	}
-	return string(b)
-}

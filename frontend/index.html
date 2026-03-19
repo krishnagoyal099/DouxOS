@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOUXOS // Distributed Compute Grid</title>
+    <meta name="description" content="DouxOS — A distributed computing grid that splits, distributes, and processes workloads across WebAssembly-powered nodes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div id="cursor" class="cursor"></div>
+    <div id="cursor-trail" class="cursor-trail"></div>
+
+    <!-- Scanline Overlay -->
+    <div class="scanline-overlay"></div>
+
+    <!-- Noise Overlay -->
+    <div class="noise-overlay"></div>
+
+    <!-- ==================== HEADER ==================== -->
+    <header id="header">
+        <div class="header-left">
+            <span class="header-tag">[SYS]</span>
+            <span class="header-version">v0.1.0</span>
+        </div>
+        <div class="header-center">
+            <span class="header-status" id="headerStatus">STANDBY</span>
+        </div>
+        <div class="header-right">
+            <span class="header-time" id="headerTime">00:00:00</span>
+        </div>
+    </header>
+
+    <!-- ==================== HERO / TITLE ==================== -->
+    <section id="hero">
+        <div class="hero-label">DISTRIBUTED COMPUTE GRID</div>
+        <div class="hero-title-row">
+            <img class="hero-logo" src="logo.jpg" alt="DouxOS">
+            <h1 class="hero-title" data-text="DOUXOS">DOUXOS</h1>
+        </div>
+        <div class="hero-sub">
+            <span class="hero-line"></span>
+            <span class="hero-sub-text">SPLIT / DISTRIBUTE / EXECUTE / ASSEMBLE</span>
+            <span class="hero-line"></span>
+        </div>
+        <div class="hero-scroll-hint">
+            <span class="scroll-arrow"></span>
+        </div>
+    </section>
+
+    <!-- ==================== MAIN GRID ==================== -->
+    <main id="dashboard">
+        <!-- Left Column: Upload + Stats -->
+        <aside id="panel-left">
+            <!-- Upload Zone -->
+            <div class="panel" id="upload-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">01</span>
+                    <span class="panel-title">DEPLOY JOB</span>
+                </div>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M20 5 L20 28" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 13 L20 5 L28 13" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M5 25 L5 35 L35 35 L35 25" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">DROP FILE HERE</div>
+                    <div class="upload-sub">or click to browse</div>
+                    <input type="file" id="fileInput" hidden>
+                </div>
+                <div class="upload-script-row">
+                    <label class="script-label" for="scriptInput">WASM SCRIPT</label>
+                    <button class="script-btn" id="scriptBtn">SELECT</button>
+                    <input type="file" id="scriptInput" hidden accept=".wasm">
+                    <span class="script-name" id="scriptName">default</span>
+                </div>
+                <button class="deploy-btn" id="deployBtn" disabled>
+                    <span class="deploy-btn-text">DEPLOY</span>
+                    <span class="deploy-btn-arrow">&rarr;</span>
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="panel" id="stats-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">02</span>
+                    <span class="panel-title">METRICS</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statJobId">--</div>
+                        <div class="stat-label">JOB ID</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statStatus">IDLE</div>
+                        <div class="stat-label">STATUS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value"><span id="statCompleted">0</span>/<span id="statTotal">0</span></div>
+                        <div class="stat-label">CHUNKS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statProgress">0%</div>
+                        <div class="stat-label">PROGRESS</div>
+                    </div>
+                </div>
+                <!-- Progress Bar -->
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="progress-glow" id="progressGlow"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Canvas Visualization -->
+        <section id="panel-center">
+            <div class="panel" id="viz-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">03</span>
+                    <span class="panel-title">NETWORK TOPOLOGY</span>
+                    <span class="panel-badge" id="nodeCount">0 NODES</span>
+                </div>
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="networkCanvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Activity Log -->
+        <aside id="panel-right">
+            <div class="panel" id="log-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">04</span>
+                    <span class="panel-title">ACTIVITY</span>
+                    <button class="log-clear-btn" id="logClearBtn">CLR</button>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry log-system">
+                        <span class="log-time">00:00:00</span>
+                        <span class="log-msg">System initialized. Awaiting deployment.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Panel (hidden until job complete) -->
+            <div class="panel hidden" id="download-panel">
+                <div class="panel-header">
+                    <span class="panel-tag">05</span>
+                    <span class="panel-title">OUTPUT</span>
+                </div>
+                <button class="download-btn" id="downloadBtn">
+                    DOWNLOAD RESULT
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer id="footer">
+        <div class="footer-left">DOUXOS GRID SYSTEM</div>
+        <div class="footer-center">
+            <div class="footer-bar">
+                <span class="footer-bar-item" id="footerConn">DISCONNECTED</span>
+                <span class="footer-bar-sep">|</span>
+                <span class="footer-bar-item" id="footerEndpoint">localhost:8080</span>
+            </div>
+        </div>
+        <div class="footer-right">2026</div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

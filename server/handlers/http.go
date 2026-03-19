@@ -17,13 +17,13 @@ import (
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse multipart form
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	// Parse multipart form (max 50MB)
+	if err := r.ParseMultipartForm(50 << 20); err != nil {
 		http.Error(w, "File too large or invalid form", http.StatusBadRequest)
 		return
 	}
 
-	file, handler, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Error retrieving file", http.StatusBadRequest)
 		return
@@ -39,9 +39,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	jobID, _ := res.LastInsertId()
 
-	// Save original file temporarily
-	tempPath := filepath.Join("./storage", handler.Filename)
-	dst, err := os.Create(tempPath)
+	// Create per-job directory
+	jobDir := filepath.Join("./storage/jobs", fmt.Sprintf("%d", jobID))
+	if err := os.MkdirAll(jobDir, 0755); err != nil {
+		http.Error(w, "Failed to create job directory", http.StatusInternalServerError)
+		return
+	}
+
+	// Save original file to storage/jobs/{id}/original.txt
+	originalPath := filepath.Join(jobDir, "original.txt")
+	dst, err := os.Create(originalPath)
 	if err != nil {
 		http.Error(w, "Failed to save uploaded file", http.StatusInternalServerError)
 		return
@@ -49,16 +56,39 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(dst, file)
 	dst.Close()
 
+	// Handle script: save to storage/jobs/{id}/script.wasm
+	scriptDst := filepath.Join(jobDir, "script.wasm")
+	scriptFile, _, scriptErr := r.FormFile("script")
+	if scriptErr == nil {
+		// Script was uploaded — save it
+		defer scriptFile.Close()
+		sf, err := os.Create(scriptDst)
+		if err != nil {
+			http.Error(w, "Failed to save script", http.StatusInternalServerError)
+			return
+		}
+		io.Copy(sf, scriptFile)
+		sf.Close()
+	} else {
+		// No script uploaded — copy default fallback
+		defaultScript := "./storage/script.wasm"
+		if data, err := os.ReadFile(defaultScript); err == nil {
+			os.WriteFile(scriptDst, data, 0644)
+		} else {
+			log.Println("Warning: no script uploaded and no default script.wasm found")
+		}
+	}
+
 	// Split the file
 	go func() {
-		defer os.Remove(tempPath)
-		if err := splitter.SplitAndSave(int(jobID), tempPath, handler.Filename); err != nil {
+		if err := splitter.SplitAndSave(int(jobID), originalPath, "original.txt"); err != nil {
 			fmt.Println("Splitting error:", err)
 			database.DB.Exec("UPDATE jobs SET status = 'FAILED' WHERE id = ?", jobID)
 		}
 	}()
 
 	// Return Job ID
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(shared.UploadResponse{JobID: int(jobID)})
 }
 
